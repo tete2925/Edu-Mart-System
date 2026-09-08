@@ -41,9 +41,9 @@ $products = $conn->query("
 <?php include "includes/header.php"; ?>
 
 
-<!-- =====================================
-     HERO
-===================================== -->
+
+     <!-- HERO -->
+
 
 <section
     class="hero"
@@ -84,9 +84,9 @@ $products = $conn->query("
 </section>
 
 
-<!-- =====================================
-     EDUCATION LEVELS
-===================================== -->
+
+     <!-- EDUCATION LEVELS -->
+
 
 <section class="education-section">
 
@@ -161,9 +161,9 @@ $products = $conn->query("
 </section>
 
 
-<!-- =====================================
-     FEATURED PRODUCTS
-===================================== -->
+
+     <!-- FEATURED PRODUCTS -->
+
 
 <section class="products-section">
 
@@ -379,9 +379,9 @@ $products = $conn->query("
 </section>
 
 
-<!-- =====================================
-     UNIVERSITY FEATURE
-===================================== -->
+
+     <!-- UNIVERSITY FEATURE -->
+
 
 <section class="university-banner">
 
@@ -417,9 +417,9 @@ $products = $conn->query("
 </section>
 
 
-<!-- =====================================
-     WHY SHOP WITH US
-===================================== -->
+
+     <!-- WHY SHOP WITH US -->
+
 
 <section class="features-section">
 
