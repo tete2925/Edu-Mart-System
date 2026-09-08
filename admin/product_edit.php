@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($stmt->execute()) {
 
-        header("Location: products.php");
+        header("Location: product.php");
         exit();
 
     } else {
@@ -230,7 +230,7 @@ Save Changes
 
 </button>
 
-<a href="products.php"
+<a href="product.php"
 class="secondary-button">
 
 Cancel

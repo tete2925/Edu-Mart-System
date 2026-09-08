@@ -17,7 +17,7 @@ if ($id > 0) {
     $stmt->execute();
 }
 
-header("Location: products.php");
+header("Location: product.php");
 exit();
 
 ?>
