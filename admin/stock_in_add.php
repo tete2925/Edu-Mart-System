@@ -1,3 +1,4 @@
+```php
 <?php
 
 require_once "admin_auth.php";
@@ -5,80 +6,136 @@ require_once "admin_auth.php";
 require_permission("stock_in");
 
 $products = $conn->query("
-    SELECT id, name
+    SELECT id, name, stock
     FROM products
+    ORDER BY name
+");
+
+$suppliers = $conn->query("
+    SELECT id, name
+    FROM suppliers
     ORDER BY name
 ");
 
 $error = "";
 
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $product_id = intval($_POST['product_id'] ?? 0);
     $quantity = intval($_POST['quantity'] ?? 0);
-    $note = trim($_POST['note'] ?? '');
+    $supplier_id = intval($_POST['supplier_id'] ?? 0);
 
+    if ($product_id <= 0 || $quantity <= 0 || $supplier_id <= 0) {
 
-    if ($product_id <= 0 || $quantity <= 0) {
-
-        $error = "Please enter valid information.";
+        $error = "Please select a product, enter a quantity, and select a supplier.";
 
     } else {
 
-        $conn->begin_transaction();
+        $supplier_name = "";
 
-        try {
+        $supplier_stmt = $conn->prepare("
+            SELECT name
+            FROM suppliers
+            WHERE id = ?
+        ");
 
-            $stmt = $conn->prepare("
-                INSERT INTO inventory
-                (product_id, type, quantity, note)
-                VALUES (?, 'IN', ?, ?)
-            ");
+        if (!$supplier_stmt) {
 
-            $stmt->bind_param(
-                "iis",
-                $product_id,
-                $quantity,
-                $note
+            $error = "Could not prepare supplier query.";
+
+        } else {
+
+            $supplier_stmt->bind_param(
+                "i",
+                $supplier_id
             );
 
-            if (!$stmt->execute()) {
-                throw new Exception("Could not add stock-in record.");
+            $supplier_stmt->execute();
+
+            $supplier_stmt->bind_result($supplier_name);
+
+            if (!$supplier_stmt->fetch()) {
+                $error = "Selected supplier was not found.";
             }
 
+            $supplier_stmt->close();
+        }
 
-            $stmt = $conn->prepare("
-                UPDATE products
-                SET stock = stock + ?
-                WHERE id = ?
-            ");
+        if ($error === "") {
 
-            $stmt->bind_param(
-                "ii",
-                $quantity,
-                $product_id
-            );
+            $conn->begin_transaction();
 
-            if (!$stmt->execute()) {
-                throw new Exception("Could not update product stock.");
+            try {
+
+                // add stock-in record
+                $stmt = $conn->prepare("
+                    INSERT INTO stock_in
+                    (product_id, quantity, note)
+                    VALUES (?, ?, ?)
+                ");
+
+                if (!$stmt) {
+                    throw new Exception(
+                        "Could not prepare stock-in query: " . $conn->error
+                    );
+                }
+
+                $stmt->bind_param(
+                    "iis",
+                    $product_id,
+                    $quantity,
+                    $supplier_name
+                );
+
+                if (!$stmt->execute()) {
+                    throw new Exception(
+                        "Could not add stock-in record: " . $stmt->error
+                    );
+                }
+
+                $stmt->close();
+
+                // update product stock
+                $stmt = $conn->prepare("
+                    UPDATE products
+                    SET stock = stock + ?
+                    WHERE id = ?
+                ");
+
+                if (!$stmt) {
+                    throw new Exception(
+                        "Could not prepare stock update query: " . $conn->error
+                    );
+                }
+
+                $stmt->bind_param(
+                    "ii",
+                    $quantity,
+                    $product_id
+                );
+
+                if (!$stmt->execute()) {
+                    throw new Exception(
+                        "Could not update product stock: " . $stmt->error
+                    );
+                }
+
+                $stmt->close();
+
+                $conn->commit();
+
+                header("Location: stock_in.php");
+                exit();
+
+            } catch (Exception $e) {
+
+                $conn->rollback();
+
+                $error = $e->getMessage();
             }
-
-
-            $conn->commit();
-
-            header("Location: stock_in.php");
-            exit();
-
-        } catch (Exception $e) {
-
-            $conn->rollback();
-
-            $error = $e->getMessage();
         }
     }
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -108,7 +165,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <div class="admin-topbar">
 
-<h1>Add Stock In</h1>
+<div>
+
+<p class="dashboard-label">
+INVENTORY
+</p>
+
+<h1>Stock In</h1>
+
+</div>
 
 </div>
 
@@ -128,14 +193,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <form method="POST">
 
-
 <div class="form-group">
 
 <label>Product</label>
 
 <select name="product_id" required>
 
-<option value="">Select Product</option>
+<option value="">
+Select Product
+</option>
 
 <?php if ($products): ?>
 
@@ -158,44 +224,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <div class="form-group">
 
-<label>Quantity</label>
+<label>Quantity Received</label>
 
-<input type="number"
-       name="quantity"
-       min="1"
-       required>
+<input
+    type="number"
+    name="quantity"
+    min="1"
+    required
+>
 
 </div>
 
 
 <div class="form-group">
 
-<label>Note</label>
+<label>Supplier</label>
 
-<textarea name="note"
-          rows="4"></textarea>
+<select name="supplier_id" required>
+
+<option value="">
+Select Supplier
+</option>
+
+<?php if ($suppliers): ?>
+
+<?php while ($supplier = $suppliers->fetch_assoc()): ?>
+
+<option value="<?= $supplier['id'] ?>">
+
+<?= htmlspecialchars($supplier['name']) ?>
+
+</option>
+
+<?php endwhile; ?>
+
+<?php endif; ?>
+
+</select>
 
 </div>
 
 
 <div class="form-actions">
 
-<button type="submit"
-        class="admin-button">
-
+<button
+    type="submit"
+    class="admin-button"
+>
 Save Stock In
-
 </button>
 
-<a href="stock_in.php"
-   class="cancel-button">
-
+<a
+    href="stock_in.php"
+    class="cancel-button"
+>
 Cancel
-
 </a>
 
 </div>
-
 
 </form>
 
@@ -210,3 +296,4 @@ Cancel
 </body>
 
 </html>
+```

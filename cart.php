@@ -1,3 +1,4 @@
+
 <?php
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -7,22 +8,33 @@ if (session_status() === PHP_SESSION_NONE) {
 include "includes/db.php";
 
 
+/* Login check */
 
-// CREATE CART
+$is_logged_in = isset($_SESSION["user_id"]);
 
 
-if (!isset($_SESSION['cart'])) {
-    $_SESSION['cart'] = [];
+/* Create cart */
+
+if (!isset($_SESSION["cart"])) {
+    $_SESSION["cart"] = [];
 }
 
 
+/* Add to cart */
 
-// ADD TO CART
+if (
+    isset($_POST["action"]) &&
+    $_POST["action"] === "add"
+) {
 
+    /* Guest cannot add */
 
-if (isset($_POST['action']) && $_POST['action'] === 'add') {
+    if (!$is_logged_in) {
+        header("Location: auth/login.php");
+        exit();
+    }
 
-    $product_id = (int)($_POST['product_id'] ?? 0);
+    $product_id = (int)($_POST["product_id"] ?? 0);
 
     if ($product_id > 0) {
 
@@ -41,21 +53,20 @@ if (isset($_POST['action']) && $_POST['action'] === 'add') {
 
         $stmt->close();
 
-
         if ($product) {
 
-            if (isset($_SESSION['cart'][$product_id])) {
+            if (isset($_SESSION["cart"][$product_id])) {
 
-                $_SESSION['cart'][$product_id]['quantity']++;
+                $_SESSION["cart"][$product_id]["quantity"]++;
 
             } else {
 
-                $_SESSION['cart'][$product_id] = [
-                    'id'       => $product['id'],
-                    'name'     => $product['name'],
-                    'price'    => $product['price'],
-                    'image'    => $product['image'],
-                    'quantity' => 1
+                $_SESSION["cart"][$product_id] = [
+                    "id" => $product["id"],
+                    "name" => $product["name"],
+                    "price" => $product["price"],
+                    "image" => $product["image"],
+                    "quantity" => 1
                 ];
             }
         }
@@ -66,17 +77,22 @@ if (isset($_POST['action']) && $_POST['action'] === 'add') {
 }
 
 
+/* Increase */
 
-// INCREASE
+if (isset($_GET["increase"])) {
 
+    /* Guest cannot change cart */
 
-if (isset($_GET['increase'])) {
+    if (!$is_logged_in) {
+        header("Location: auth/login.php");
+        exit();
+    }
 
-    $product_id = (int)$_GET['increase'];
+    $product_id = (int)$_GET["increase"];
 
-    if (isset($_SESSION['cart'][$product_id])) {
+    if (isset($_SESSION["cart"][$product_id])) {
 
-        $_SESSION['cart'][$product_id]['quantity']++;
+        $_SESSION["cart"][$product_id]["quantity"]++;
     }
 
     header("Location: cart.php");
@@ -84,20 +100,25 @@ if (isset($_GET['increase'])) {
 }
 
 
-// DECREASE
+/* Decrease */
 
+if (isset($_GET["decrease"])) {
 
-if (isset($_GET['decrease'])) {
+    /* Guest cannot change cart */
 
-    $product_id = (int)$_GET['decrease'];
+    if (!$is_logged_in) {
+        header("Location: auth/login.php");
+        exit();
+    }
 
-    if (isset($_SESSION['cart'][$product_id])) {
+    $product_id = (int)$_GET["decrease"];
 
-        $_SESSION['cart'][$product_id]['quantity']--;
+    if (isset($_SESSION["cart"][$product_id])) {
 
-        if ($_SESSION['cart'][$product_id]['quantity'] <= 0) {
+        $_SESSION["cart"][$product_id]["quantity"]--;
 
-            unset($_SESSION['cart'][$product_id]);
+        if ($_SESSION["cart"][$product_id]["quantity"] <= 0) {
+            unset($_SESSION["cart"][$product_id]);
         }
     }
 
@@ -106,54 +127,62 @@ if (isset($_GET['decrease'])) {
 }
 
 
+/* Remove */
 
-// REMOVE
+if (isset($_GET["remove"])) {
 
+    /* Guest cannot change cart */
 
-if (isset($_GET['remove'])) {
+    if (!$is_logged_in) {
+        header("Location: auth/login.php");
+        exit();
+    }
 
-    $product_id = (int)$_GET['remove'];
+    $product_id = (int)$_GET["remove"];
 
-    unset($_SESSION['cart'][$product_id]);
-
-    header("Location: cart.php");
-    exit();
-}
-
-
-
-// CLEAR CART
-
-
-if (isset($_GET['clear'])) {
-
-    $_SESSION['cart'] = [];
+    unset($_SESSION["cart"][$product_id]);
 
     header("Location: cart.php");
     exit();
 }
 
 
-// TOTAL
+/* Clear cart */
 
+if (isset($_GET["clear"])) {
+
+    /* Guest cannot change cart */
+
+    if (!$is_logged_in) {
+        header("Location: auth/login.php");
+        exit();
+    }
+
+    $_SESSION["cart"] = [];
+
+    header("Location: cart.php");
+    exit();
+}
+
+
+/* Total */
 
 $cart_total = 0;
 $cart_count = 0;
 
-foreach ($_SESSION['cart'] as $item) {
+foreach ($_SESSION["cart"] as $item) {
 
     $cart_total +=
-        $item['price'] * $item['quantity'];
+        $item["price"] * $item["quantity"];
 
     $cart_count +=
-        $item['quantity'];
+        $item["quantity"];
 }
 
 
 include "includes/header.php";
 
 ?>
-
 
 <section class="cart-page">
 
@@ -164,7 +193,7 @@ include "includes/header.php";
         </h1>
 
 
-        <?php if (empty($_SESSION['cart'])): ?>
+        <?php if (empty($_SESSION["cart"])): ?>
 
             <div class="empty-cart">
 
@@ -201,24 +230,24 @@ include "includes/header.php";
 
                 <div class="cart-items">
 
-                    <?php foreach ($_SESSION['cart'] as $item): ?>
+                    <?php foreach ($_SESSION["cart"] as $item): ?>
 
                         <div class="cart-item">
 
 
                             <!-- IMAGE -->
 
-                            <?php if (!empty($item['image'])): ?>
+                            <?php if (!empty($item["image"])): ?>
 
                                 <img
                                     src="images/<?php
                                         echo htmlspecialchars(
-                                            $item['image']
+                                            $item["image"]
                                         );
                                     ?>"
                                     alt="<?php
                                         echo htmlspecialchars(
-                                            $item['name']
+                                            $item["name"]
                                         );
                                     ?>"
                                 >
@@ -236,7 +265,9 @@ include "includes/header.php";
                                         font-size:35px;
                                     "
                                 >
+
                                     <i class="fa-solid fa-box"></i>
+
                                 </div>
 
                             <?php endif; ?>
@@ -249,7 +280,7 @@ include "includes/header.php";
                                 <h3>
                                     <?php
                                     echo htmlspecialchars(
-                                        $item['name']
+                                        $item["name"]
                                     );
                                     ?>
                                 </h3>
@@ -259,7 +290,7 @@ include "includes/header.php";
 
                                     <?php
                                     echo number_format(
-                                        $item['price']
+                                        $item["price"]
                                     );
                                     ?>
 
@@ -284,7 +315,7 @@ include "includes/header.php";
 
                                     <a
                                         href="cart.php?decrease=<?php
-                                            echo (int)$item['id'];
+                                            echo (int)$item["id"];
                                         ?>"
                                         style="
                                             width:42px;
@@ -314,9 +345,11 @@ include "includes/header.php";
                                             font-weight:bold;
                                         "
                                     >
+
                                         <?php
-                                        echo (int)$item['quantity'];
+                                        echo (int)$item["quantity"];
                                         ?>
+
                                     </span>
 
 
@@ -324,7 +357,7 @@ include "includes/header.php";
 
                                     <a
                                         href="cart.php?increase=<?php
-                                            echo (int)$item['id'];
+                                            echo (int)$item["id"];
                                         ?>"
                                         style="
                                             width:42px;
@@ -357,10 +390,12 @@ include "includes/header.php";
                                 <strong>
 
                                     <?php
+
                                     echo number_format(
-                                        $item['price'] *
-                                        $item['quantity']
+                                        $item["price"] *
+                                        $item["quantity"]
                                     );
+
                                     ?>
 
                                     MMK
@@ -370,7 +405,7 @@ include "includes/header.php";
 
                                 <a
                                     href="cart.php?remove=<?php
-                                        echo (int)$item['id'];
+                                        echo (int)$item["id"];
                                     ?>"
                                     class="remove-btn"
                                 >
@@ -399,72 +434,74 @@ include "includes/header.php";
                         Clear Cart
                     </a>
 
+
                 </div>
 
-<!-- SUMMARY -->
 
-<div class="checkout-box">
+                <!-- SUMMARY -->
 
-    <h2>
-        Cart Summary
-    </h2>
+                <div class="checkout-box">
 
-
-    <div class="summary-row">
-
-        <span>
-            Items
-        </span>
-
-        <strong>
-            <?php echo $cart_count; ?>
-        </strong>
-
-    </div>
+                    <h2>
+                        Cart Summary
+                    </h2>
 
 
-    <div class="summary-row total">
+                    <div class="summary-row">
 
-        <span>
-            Total
-        </span>
+                        <span>
+                            Items
+                        </span>
 
-        <strong>
+                        <strong>
+                            <?php echo $cart_count; ?>
+                        </strong>
 
-            <?php
-            echo number_format($cart_total);
-            ?>
-
-            MMK
-
-        </strong>
-
-    </div>
+                    </div>
 
 
-    <!-- CHECKOUT -->
+                    <div class="summary-row total">
 
-   <div class="checkout-form">
+                        <span>
+                            Total
+                        </span>
 
-    <h3>
-        Checkout
-    </h3>
+                        <strong>
 
-    <a
-        href="deli.php"
-        class="checkout-btn"
-        style="
-            display:block;
-            text-align:center;
-            text-decoration:none;
-        "
-    >
-        Checkout
-    </a>
+                            <?php
+                            echo number_format($cart_total);
+                            ?>
 
-</div>
+                            MMK
 
-</div>
+                        </strong>
+
+                    </div>
+
+
+                    <!-- CHECKOUT -->
+
+                    <div class="checkout-form">
+
+                        <h3>
+                            Checkout
+                        </h3>
+
+                        <a
+                            href="deli.php"
+                            class="checkout-btn"
+                            style="
+                                display:block;
+                                text-align:center;
+                                text-decoration:none;
+                            "
+                        >
+                            Checkout
+                        </a>
+
+                    </div>
+
+                </div>
 
 
             </div>
@@ -482,3 +519,4 @@ include "includes/header.php";
 include "includes/footer.php";
 
 ?>
+

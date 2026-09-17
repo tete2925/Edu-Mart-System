@@ -1,12 +1,11 @@
+
 <?php
 
 require_once "admin_auth.php";
 
-if ($user['role'] !== 'owner') {
-
+if (($user['role'] ?? '') !== 'owner') {
     header("Location: index.php");
     exit();
-
 }
 
 $id = intval($_GET['id'] ?? 0);
@@ -23,38 +22,20 @@ $stmt->execute();
 $row = $stmt->get_result()->fetch_assoc();
 
 if (!$row) {
-
     header("Location: users.php");
     exit();
-
 }
-
-
-/*
-|--------------------------------------------------------------------------
-| Owner cannot change another owner's role
-|--------------------------------------------------------------------------
-*/
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $name = trim($_POST['name']);
-    $role = $_POST['role'];
+    $name = trim($_POST['name'] ?? '');
+    $role = $_POST['role'] ?? 'customer';
 
-    if ($row['role'] === 'owner' && $id != $user['id']) {
+    $allowed_roles = ['customer', 'staff', 'owner'];
 
-        $role = 'owner';
+    if (!in_array($role, $allowed_roles, true)) {
+        $role = 'customer';
     }
-
-    /*
-     * Never allow creating a second owner accidentally
-     */
-
-    if ($role === 'owner' && $id != $user['id']) {
-
-        $role = 'staff';
-    }
-
 
     $stmt = $conn->prepare("
         UPDATE users
@@ -82,120 +63,102 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html>
 
 <head>
+    <title>Edit User</title>
 
-<title>Edit User</title>
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-<link rel="stylesheet"
-href="adm.css">
-
+    <link rel="stylesheet"
+          href="adm.css">
 </head>
 
 <body>
 
 <div class="admin-layout">
 
-<?php include "sidebar.php"; ?>
+    <?php include "sidebar.php"; ?>
 
-<main class="admin-main">
+    <main class="admin-main">
 
-<div class="admin-topbar">
+        <div class="admin-topbar">
+            <h1>Edit User</h1>
+        </div>
 
-<h1>Edit User</h1>
+        <div class="dashboard-panel">
 
-</div>
+            <form method="POST" class="admin-form">
 
-<div class="dashboard-panel">
+                <div class="form-group">
+                    <label>Name</label>
 
-<form method="POST"
-class="admin-form">
+                    <input
+                        type="text"
+                        name="name"
+                        value="<?= htmlspecialchars($row['name']) ?>"
+                        required
+                    >
+                </div>
 
-<div class="form-group">
+                <div class="form-group">
+                    <label>Email</label>
 
-<label>Name</label>
+                    <input
+                        type="text"
+                        value="<?= htmlspecialchars($row['email']) ?>"
+                        disabled
+                    >
+                </div>
 
-<input type="text"
-name="name"
-value="<?= htmlspecialchars($row['name']) ?>"
-required>
+                <div class="form-group">
+                    <label>Role</label>
 
-</div>
+                    <select name="role">
 
+                        <option
+                            value="customer"
+                            <?= $row['role'] === 'customer' ? 'selected' : '' ?>
+                        >
+                            Customer
+                        </option>
 
-<div class="form-group">
+                        <option
+                            value="staff"
+                            <?= $row['role'] === 'staff' ? 'selected' : '' ?>
+                        >
+                            Staff
+                        </option>
 
-<label>Email</label>
+                        <option
+                            value="owner"
+                            <?= $row['role'] === 'owner' ? 'selected' : '' ?>
+                        >
+                            Owner
+                        </option>
 
-<input type="text"
-value="<?= htmlspecialchars($row['email']) ?>"
-disabled>
+                    </select>
+                </div>
 
-</div>
+                <div class="form-actions">
 
+                    <button class="admin-button">
+                        Save Changes
+                    </button>
 
-<div class="form-group">
+                    <a href="users.php"
+                       class="secondary-button">
+                        Cancel
+                    </a>
 
-<label>Role</label>
+                </div>
 
-<select name="role">
+            </form>
 
-<option value="customer"
-<?= $row['role'] === 'customer' ? 'selected' : '' ?>>
+        </div>
 
-Customer
-
-</option>
-
-<option value="staff"
-<?= $row['role'] === 'staff' ? 'selected' : '' ?>>
-
-Staff
-
-</option>
-
-<?php if ($id == $user['id']): ?>
-
-<option value="owner"
-selected>
-
-Owner
-
-</option>
-
-<?php endif; ?>
-
-</select>
-
-</div>
-
-
-<div class="form-actions">
-
-<button class="admin-button">
-
-Save Changes
-
-</button>
-
-<a href="users.php"
-class="secondary-button">
-
-Cancel
-
-</a>
-
-</div>
-
-</form>
-
-</div>
-
-</main>
+    </main>
 
 </div>
 
 </body>
-
 </html>
+

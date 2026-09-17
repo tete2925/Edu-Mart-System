@@ -80,7 +80,8 @@ if ($level) {
                 <?php while ($category = $categories->fetch_assoc()): ?>
 
                     <a
-                        href="product.php?category=<?php echo $category['id']; ?>"
+                       
+                        href="products.php?category=<?= $category['id'] ?>"
                         class="category-card"
                     >
 

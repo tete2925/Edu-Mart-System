@@ -5,9 +5,7 @@ require_once "admin_auth.php";
 require_permission("orders");
 
 
-/* =========================================================
-   DELETE ORDER
-========================================================= */
+/*  DELETE ORDER */
 
 if (isset($_GET['delete'])) {
 
@@ -56,6 +54,29 @@ if (isset($_GET['delete'])) {
     exit;
 }
 
+// confirm order
+
+if (isset($_GET['confirm'])) {
+    $id = (int)$_GET['confirm'];
+
+    $stmt = $conn->prepare("
+        UPDATE orders
+        SET status = 'Confirmed'
+        WHERE id = ?
+        AND status = 'Pending'
+    ");
+
+    if (!$stmt) {
+        die("Confirm prepare failed: " . $conn->error);
+    }
+
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->close();
+
+    header("Location: order.php");
+    exit;
+}
 
 $result = $conn->query("
     SELECT
@@ -248,14 +269,25 @@ $result = $conn->query("
 
                                     <div class="table-actions">
 
-                                        <a
-                                            href="order.php?delete=<?= (int)$row['id'] ?>"
-                                            class="delete-button"
-                                            onclick="return confirm('Delete this order and all related order information?');"
-                                        >
-                                            Delete
-                                        </a>
+                                        <?php if ($row['status'] === 'Pending'): ?>
 
+    <a
+        href="order.php?confirm=<?= (int)$row['id'] ?>"
+        class="edit-button"
+        onclick="return confirm('Confirm this order?');"
+    >
+        Confirm
+    </a>
+
+<?php endif; ?>
+
+<a
+    href="order.php?delete=<?= (int)$row['id'] ?>"
+    class="delete-button"
+    onclick="return confirm('Delete this order and all related order information?');"
+>
+    Delete
+</a>
                                     </div>
 
                                 </td>

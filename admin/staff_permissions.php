@@ -2,103 +2,102 @@
 
 require_once "admin_auth.php";
 
-if ($user['role'] !== 'owner') {
-
+    if (($user['role'] ?? '') !== 'owner') {
     header("Location: index.php");
     exit();
-
 }
 
-$staff_id = intval($_GET['id'] ?? 0);
+if (!isset($_GET['id'])) {
+    header("Location: users.php");
+    exit();
+}
+
+$staff_id = intval($_GET['id']);
 
 $stmt = $conn->prepare("
     SELECT id, name, email, role
     FROM users
     WHERE id = ?
+    LIMIT 1
 ");
 
 $stmt->bind_param("i", $staff_id);
 $stmt->execute();
 
-$staff = $stmt->get_result()->fetch_assoc();
+$result = $stmt->get_result();
+$staff = $result->fetch_assoc();
+
+$stmt->close();
 
 if (!$staff || $staff['role'] !== 'staff') {
-
     header("Location: users.php");
     exit();
-
 }
 
-
 $permissions = [
-
-    'products' => 'Products',
     'categories' => 'Categories',
+    'products' => 'Products',
     'inventory' => 'Inventory',
     'stock_in' => 'Stock In',
     'stock_out' => 'Stock Out',
     'suppliers' => 'Suppliers',
     'orders' => 'Orders'
-
 ];
-
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $selected = $_POST['permissions'] ?? [];
+    $conn->begin_transaction();
 
+    try {
 
-    /*
-     * Remove old permissions
-     */
-
-    $stmt = $conn->prepare("
-        DELETE FROM staff_permissions
-        WHERE user_id = ?
-    ");
-
-    $stmt->bind_param("i", $staff_id);
-    $stmt->execute();
-
-
-    /*
-     * Add selected permissions
-     */
-
-    foreach ($selected as $permission) {
-
-        if (!array_key_exists($permission, $permissions)) {
-            continue;
-        }
-
-        $stmt = $conn->prepare("
-            INSERT INTO staff_permissions
-            (user_id, permission)
-            VALUES (?, ?)
+        $delete = $conn->prepare("
+            DELETE FROM staff_permissions
+            WHERE user_id = ?
         ");
 
-        $stmt->bind_param(
-            "is",
-            $staff_id,
-            $permission
-        );
+        $delete->bind_param("i", $staff_id);
+        $delete->execute();
+        $delete->close();
 
-        $stmt->execute();
+        if (isset($_POST['permissions']) && is_array($_POST['permissions'])) {
+
+            $insert = $conn->prepare("
+                INSERT INTO staff_permissions
+                (user_id, permission)
+                VALUES (?, ?)
+            ");
+
+            foreach ($_POST['permissions'] as $permission) {
+
+                if (array_key_exists($permission, $permissions)) {
+
+                    $insert->bind_param(
+                        "is",
+                        $staff_id,
+                        $permission
+                    );
+
+                    $insert->execute();
+                }
+            }
+
+            $insert->close();
+        }
+
+        $conn->commit();
+
+        header("Location: staff_permissions.php?id=" . $staff_id . "&saved=1");
+        exit();
+
+    } catch (Exception $e) {
+
+        $conn->rollback();
+
+        $error = "Failed to save permissions.";
     }
-
-
-    header("Location: users.php");
-    exit();
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| Get existing permissions
-|--------------------------------------------------------------------------
-*/
-
-$current = [];
+$current_permissions = [];
 
 $stmt = $conn->prepare("
     SELECT permission
@@ -112,24 +111,24 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 while ($row = $result->fetch_assoc()) {
-
-    $current[] = $row['permission'];
+    $current_permissions[] = $row['permission'];
 }
 
-?>
+$stmt->close();
 
+?>
 <!DOCTYPE html>
 <html>
-
 <head>
 
-<title>Staff Permissions</title>
+    <title>Staff Permissions</title>
 
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    >
 
-<link rel="stylesheet"
-href="adm.css">
+    <link rel="stylesheet" href="adm.css">
 
 </head>
 
@@ -137,100 +136,120 @@ href="adm.css">
 
 <div class="admin-layout">
 
-<?php include "sidebar.php"; ?>
+    <?php include "sidebar.php"; ?>
 
-<main class="admin-main">
+    <main class="admin-main">
 
-<div class="admin-topbar">
+        <div class="admin-topbar">
 
-<div>
+            <div>
 
-<p class="dashboard-label">
-ACCOUNT MANAGEMENT
-</p>
+                <p class="dashboard-label">
+                    ACCOUNT MANAGEMENT
+                </p>
 
-<h1>Staff Permissions</h1>
+                <h1>Staff Permissions</h1>
 
-</div>
+            </div>
 
-</div>
+            <a href="users.php" class="admin-button">
+                <i class="fa-solid fa-arrow-left"></i>
+                Back to Users
+            </a>
 
-
-<div class="dashboard-panel">
-
-<p style="margin-bottom:25px;">
-
-<strong>
-<?= htmlspecialchars($staff['name']) ?>
-</strong>
-
-<br>
-
-<?= htmlspecialchars($staff['email']) ?>
-
-</p>
+        </div>
 
 
-<form method="POST"
-class="admin-form">
+        <div class="dashboard-panel">
+
+            <h2>
+                <?= htmlspecialchars($staff['name']) ?>
+            </h2>
+
+            <p>
+                <?= htmlspecialchars($staff['email']) ?>
+            </p>
 
 
-<?php foreach ($permissions as $key => $label): ?>
+            <?php if (isset($_GET['saved'])): ?>
 
-<div style="
-    margin-bottom:15px;
-    padding:14px;
-    border:1px solid #ddd;
-    border-radius:6px;
-">
+                <p>
+                    Permissions saved successfully.
+                </p>
 
-<label style="
-    display:flex;
-    align-items:center;
-    gap:10px;
-    font-size:14px;
-">
-
-<input type="checkbox"
-name="permissions[]"
-value="<?= $key ?>"
-<?= in_array($key, $current) ? 'checked' : '' ?>>
-
-<?= htmlspecialchars($label) ?>
-
-</label>
-
-</div>
-
-<?php endforeach; ?>
+            <?php endif; ?>
 
 
-<div class="form-actions">
+            <?php if (isset($error)): ?>
 
-<button type="submit"
-class="admin-button">
+                <p>
+                    <?= htmlspecialchars($error) ?>
+                </p>
 
-Save Permissions
+            <?php endif; ?>
 
-</button>
 
-<a href="users.php"
-class="secondary-button">
+            <form method="POST">
 
-Cancel
+                <div class="admin-table-wrapper">
 
-</a>
+                    <table class="admin-table">
 
-</div>
+                        <thead>
 
-</form>
+                            <tr>
+                                <th>Permission</th>
+                                <th>Allow</th>
+                            </tr>
 
-</div>
+                        </thead>
 
-</main>
+                        <tbody>
+
+                        <?php foreach ($permissions as $key => $label): ?>
+
+                            <tr>
+
+                                <td>
+                                    <?= htmlspecialchars($label) ?>
+                                </td>
+
+                                <td>
+
+                                    <input
+                                        type="checkbox"
+                                        name="permissions[]"
+                                        value="<?= htmlspecialchars($key) ?>"
+                                        <?= in_array($key, $current_permissions, true) ? 'checked' : '' ?>
+                                    >
+
+                                </td>
+
+                            </tr>
+
+                        <?php endforeach; ?>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+
+                <br>
+
+                <button type="submit" class="admin-button">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    Save Permissions
+                </button>
+
+            </form>
+
+        </div>
+
+    </main>
 
 </div>
 
 </body>
-
 </html>

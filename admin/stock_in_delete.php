@@ -11,12 +11,11 @@ $id = intval($_GET['id'] ?? 0);
 if ($id > 0) {
 
     $stmt = $conn->prepare("
-        SELECT product_id, quantity
-        FROM inventory
-        WHERE id = ?
-        AND type = 'IN'
-        LIMIT 1
-    ");
+    SELECT product_id, quantity
+    FROM stock_in
+    WHERE id = ?
+    LIMIT 1
+");
 
     $stmt->bind_param("i", $id);
     $stmt->execute();
@@ -63,10 +62,9 @@ if ($id > 0) {
              */
 
             $stmt = $conn->prepare("
-                DELETE FROM inventory
-                WHERE id = ?
-                AND type = 'IN'
-            ");
+    DELETE FROM stock_in
+    WHERE id = ?
+");
 
             $stmt->bind_param("i", $id);
             $stmt->execute();

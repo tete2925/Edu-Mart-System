@@ -2,11 +2,8 @@
 
 require_once "admin_auth.php";
 
+/* dashboard counts */
 
-/*Dashboard counts
-*/
-
-$edu_count = 0;
 $category_count = 0;
 $product_count = 0;
 $stock_count = 0;
@@ -14,24 +11,7 @@ $order_count = 0;
 $supplier_count = 0;
 
 
-/*Education levels
-*/
-
-$edu_result = $conn->query("
-    SELECT COUNT(*) AS total
-    FROM edu_lvls
-");
-
-if ($edu_result) {
-    $edu_count = $edu_result->fetch_assoc()['total'];
-}
-
-
-/*
-
- Categories
-
-*/
+/* categories */
 
 $category_result = $conn->query("
     SELECT COUNT(*) AS total
@@ -39,15 +19,15 @@ $category_result = $conn->query("
 ");
 
 if ($category_result) {
-    $category_count = $category_result->fetch_assoc()['total'];
+    $row = $category_result->fetch_assoc();
+
+    if ($row) {
+        $category_count = (int)$row['total'];
+    }
 }
 
 
-/*
-|
-| Products
-|
-*/
+/* products */
 
 $product_result = $conn->query("
     SELECT COUNT(*) AS total
@@ -55,15 +35,15 @@ $product_result = $conn->query("
 ");
 
 if ($product_result) {
-    $product_count = $product_result->fetch_assoc()['total'];
+    $row = $product_result->fetch_assoc();
+
+    if ($row) {
+        $product_count = (int)$row['total'];
+    }
 }
 
 
-/*
-|
-| Stock
-|
-*/
+/* total stock */
 
 $stock_result = $conn->query("
     SELECT COALESCE(SUM(stock), 0) AS total
@@ -71,15 +51,15 @@ $stock_result = $conn->query("
 ");
 
 if ($stock_result) {
-    $stock_count = $stock_result->fetch_assoc()['total'];
+    $row = $stock_result->fetch_assoc();
+
+    if ($row) {
+        $stock_count = (int)$row['total'];
+    }
 }
 
 
-/*
-|
-| Orders
-|
-*/
+/* orders */
 
 $order_result = $conn->query("
     SELECT COUNT(*) AS total
@@ -87,15 +67,15 @@ $order_result = $conn->query("
 ");
 
 if ($order_result) {
-    $order_count = $order_result->fetch_assoc()['total'];
+    $row = $order_result->fetch_assoc();
+
+    if ($row) {
+        $order_count = (int)$row['total'];
+    }
 }
 
 
-/*
-|
-| Suppliers
-|
-*/
+/* suppliers */
 
 $supplier_result = $conn->query("
     SELECT COUNT(*) AS total
@@ -103,7 +83,11 @@ $supplier_result = $conn->query("
 ");
 
 if ($supplier_result) {
-    $supplier_count = $supplier_result->fetch_assoc()['total'];
+    $row = $supplier_result->fetch_assoc();
+
+    if ($row) {
+        $supplier_count = (int)$row['total'];
+    }
 }
 
 ?>
@@ -134,7 +118,6 @@ if ($supplier_result) {
 
     <?php include "sidebar.php"; ?>
 
-
     <main class="admin-main">
 
         <div class="admin-topbar">
@@ -154,13 +137,17 @@ if ($supplier_result) {
                 <i class="fa-solid fa-circle-user"></i>
 
                 <div>
+
                     <strong>
-                        <?= htmlspecialchars($user['name']) ?>
+                        <?= htmlspecialchars($user['name'] ?? 'User') ?>
                     </strong>
 
                     <span>
-                        <?= htmlspecialchars(ucfirst($user['role'])) ?>
+                        <?= htmlspecialchars(
+                            ucfirst($user['role'] ?? 'staff')
+                        ) ?>
                     </span>
+
                 </div>
 
             </div>
@@ -177,7 +164,7 @@ if ($supplier_result) {
                 </p>
 
                 <h2>
-                    Hello, <?= htmlspecialchars($user['name']) ?>
+                    Hello, <?= htmlspecialchars($user['name'] ?? 'User') ?>
                 </h2>
 
                 <p>
@@ -191,114 +178,149 @@ if ($supplier_result) {
 
         <div class="dashboard-grid">
 
-
-            <?php if ($user['role'] === 'owner'): ?>
-
-            <div class="dashboard-card">
-
-                <div class="dashboard-card-icon">
-                    <i class="fa-solid fa-graduation-cap"></i>
-                </div>
-
-                <div>
-                    <span>Education Levels</span>
-                    <strong><?= $edu_count ?></strong>
-                </div>
-
-            </div>
-
-            <?php endif; ?>
-
-
             <?php if (has_permission("categories")): ?>
 
-            <div class="dashboard-card">
+                <!-- categories -->
 
-                <div class="dashboard-card-icon">
-                    <i class="fa-solid fa-layer-group"></i>
+                <div class="dashboard-card">
+
+                    <div class="dashboard-card-icon">
+
+                        <i class="fa-solid fa-layer-group"></i>
+
+                    </div>
+
+                    <div>
+
+                        <span>
+                            Categories
+                        </span>
+
+                        <strong>
+                            <?= $category_count ?>
+                        </strong>
+
+                    </div>
+
                 </div>
-
-                <div>
-                    <span>Categories</span>
-                    <strong><?= $category_count ?></strong>
-                </div>
-
-            </div>
 
             <?php endif; ?>
 
 
             <?php if (has_permission("products")): ?>
 
-            <div class="dashboard-card">
+                <!-- products -->
 
-                <div class="dashboard-card-icon">
-                    <i class="fa-solid fa-box"></i>
+                <div class="dashboard-card">
+
+                    <div class="dashboard-card-icon">
+
+                        <i class="fa-solid fa-box"></i>
+
+                    </div>
+
+                    <div>
+
+                        <span>
+                            Products
+                        </span>
+
+                        <strong>
+                            <?= $product_count ?>
+                        </strong>
+
+                    </div>
+
                 </div>
-
-                <div>
-                    <span>Products</span>
-                    <strong><?= $product_count ?></strong>
-                </div>
-
-            </div>
 
             <?php endif; ?>
 
 
             <?php if (has_permission("inventory")): ?>
 
-            <div class="dashboard-card">
+                <!-- total stock -->
 
-                <div class="dashboard-card-icon">
-                    <i class="fa-solid fa-warehouse"></i>
+                <div class="dashboard-card">
+
+                    <div class="dashboard-card-icon">
+
+                        <i class="fa-solid fa-warehouse"></i>
+
+                    </div>
+
+                    <div>
+
+                        <span>
+                            Total Stock
+                        </span>
+
+                        <strong>
+                            <?= $stock_count ?>
+                        </strong>
+
+                    </div>
+
                 </div>
-
-                <div>
-                    <span>Total Stock</span>
-                    <strong><?= $stock_count ?></strong>
-                </div>
-
-            </div>
 
             <?php endif; ?>
 
 
             <?php if (has_permission("orders")): ?>
 
-            <div class="dashboard-card">
+                <!-- orders -->
 
-                <div class="dashboard-card-icon">
-                    <i class="fa-solid fa-cart-shopping"></i>
+                <div class="dashboard-card">
+
+                    <div class="dashboard-card-icon">
+
+                        <i class="fa-solid fa-cart-shopping"></i>
+
+                    </div>
+
+                    <div>
+
+                        <span>
+                            Orders
+                        </span>
+
+                        <strong>
+                            <?= $order_count ?>
+                        </strong>
+
+                    </div>
+
                 </div>
-
-                <div>
-                    <span>Orders</span>
-                    <strong><?= $order_count ?></strong>
-                </div>
-
-            </div>
 
             <?php endif; ?>
 
 
             <?php if (has_permission("suppliers")): ?>
 
-            <div class="dashboard-card">
+                <!-- suppliers -->
 
-                <div class="dashboard-card-icon">
-                    <i class="fa-solid fa-truck-field"></i>
+                <div class="dashboard-card">
+
+                    <div class="dashboard-card-icon">
+
+                        <i class="fa-solid fa-truck-field"></i>
+
+                    </div>
+
+                    <div>
+
+                        <span>
+                            Suppliers
+                        </span>
+
+                        <strong>
+                            <?= $supplier_count ?>
+                        </strong>
+
+                    </div>
+
                 </div>
-
-                <div>
-                    <span>Suppliers</span>
-                    <strong><?= $supplier_count ?></strong>
-                </div>
-
-            </div>
 
             <?php endif; ?>
-
 
         </div>
 
@@ -308,11 +330,13 @@ if ($supplier_result) {
             <div class="panel-heading">
 
                 <div>
+
                     <p class="dashboard-label">
                         QUICK ACCESS
                     </p>
 
                     <h2>Store Management</h2>
+
                 </div>
 
             </div>
@@ -320,134 +344,150 @@ if ($supplier_result) {
 
             <div class="quick-actions">
 
-
-                <?php if ($user['role'] === 'owner'): ?>
-
-                <a href="edu_lvls.php"
-                   class="quick-action">
-
-                    <i class="fa-solid fa-graduation-cap"></i>
-
-                    <span>
-                        Education Levels
-                    </span>
-
-                </a>
-
-                <?php endif; ?>
-
-
                 <?php if (has_permission("categories")): ?>
 
-                <a href="categories.php"
-                   class="quick-action">
+                    <!-- categories -->
 
-                    <i class="fa-solid fa-layer-group"></i>
+                    <a href="category.php"
+                       class="quick-action">
 
-                    <span>
-                        Categories
-                    </span>
+                        <i class="fa-solid fa-layer-group"></i>
 
-                </a>
+                        <span>
+                            Categories
+                        </span>
+
+                    </a>
 
                 <?php endif; ?>
 
 
                 <?php if (has_permission("products")): ?>
 
-                <a href="products.php"
-                   class="quick-action">
+                    <!-- products -->
 
-                    <i class="fa-solid fa-box"></i>
+                    <a href="product.php"
+                       class="quick-action">
 
-                    <span>
-                        Products
-                    </span>
+                        <i class="fa-solid fa-box"></i>
 
-                </a>
+                        <span>
+                            Products
+                        </span>
+
+                    </a>
 
                 <?php endif; ?>
 
 
                 <?php if (has_permission("inventory")): ?>
 
-                <a href="inventory.php"
-                   class="quick-action">
+                    
 
-                    <i class="fa-solid fa-warehouse"></i>
+                    <!-- stock in -->
 
-                    <span>
-                        Inventory
-                    </span>
+                    <a href="stock_in.php"
+                       class="quick-action">
 
-                </a>
+                        <i class="fa-solid fa-arrow-right-to-bracket"></i>
 
-                <?php endif; ?>
+                        <span>
+                            Stock In
+                        </span>
 
-
-                <?php if (has_permission("stock_in")): ?>
-
-                <a href="stock_in.php"
-                   class="quick-action">
-
-                    <i class="fa-solid fa-arrow-right-to-bracket"></i>
-
-                    <span>
-                        Stock In
-                    </span>
-
-                </a>
+                    </a>
 
                 <?php endif; ?>
 
 
                 <?php if (has_permission("stock_out")): ?>
 
-                <a href="stock_out.php"
-                   class="quick-action">
+                    <!-- stock out -->
 
-                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    <a href="stock_out.php"
+                       class="quick-action">
 
-                    <span>
-                        Stock Out
-                    </span>
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
 
-                </a>
+                        <span>
+                            Stock Out
+                        </span>
+
+                    </a>
 
                 <?php endif; ?>
 
 
                 <?php if (has_permission("suppliers")): ?>
 
-                <a href="suppliers.php"
-                   class="quick-action">
+                    <!-- suppliers -->
 
-                    <i class="fa-solid fa-truck-field"></i>
+                    <a href="suppliers.php"
+                       class="quick-action">
 
-                    <span>
-                        Suppliers
-                    </span>
+                        <i class="fa-solid fa-truck-field"></i>
 
-                </a>
+                        <span>
+                            Suppliers
+                        </span>
+
+                    </a>
 
                 <?php endif; ?>
 
 
                 <?php if (has_permission("orders")): ?>
 
-                <a href="order_items.php"
-                   class="quick-action">
+                    <!-- order items -->
 
-                    <i class="fa-solid fa-cart-shopping"></i>
+                    <a href="order_items.php"
+                       class="quick-action">
 
-                    <span>
-                        Order Items
-                    </span>
+                        <i class="fa-solid fa-cart-shopping"></i>
 
-                </a>
+                        <span>
+                            Order Items
+                        </span>
+
+                    </a>
 
                 <?php endif; ?>
 
+
+                <?php if (has_permission("delivery_info")): ?>
+
+                    <!-- delivery info -->
+
+                    <a href="delinfo.php"
+                       class="quick-action">
+
+                        <i class="fa-solid fa-truck"></i>
+
+                        <span>
+                            Delivery Info
+                        </span>
+
+                    </a>
+
+                <?php endif; ?>
+
+
+                <?php if (has_permission("users")): ?>
+
+                    <!-- user management -->
+
+                    <a href="users.php"
+                       class="quick-action">
+
+                        <i class="fa-solid fa-users"></i>
+
+                        <span>
+                            User Management
+                        </span>
+
+                    </a>
+
+                <?php endif; ?>
 
             </div>
 
@@ -458,4 +498,6 @@ if ($supplier_result) {
 </div>
 
 </body>
+
 </html>
+```

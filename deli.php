@@ -190,11 +190,12 @@ $regions = [
 
 
 $shipping_methods = [
-    'ကားဂိတ်ချ' => 2000,
+    // 'ကားဂိတ်ချ' => 2000,
     'နေပြည်တော်' => 4500,
     'မန္တလေး' => 5000,
     'ရန်ကုန်' => 4000,
-    'အခြားမြို့များ' => 0
+    'အခြားမြို့များ' => 5000,
+    'မအူပင်' => 2000,
 ];
 
 
@@ -376,36 +377,37 @@ if (
 
     // CREATE ORDER
 
+    $user_id = $_SESSION['user_id'] ?? null;
 
-    $stmt = $conn->prepare("
-        INSERT INTO orders
-        (
-            customer_name,
-            customer_phone,
-            customer_address,
-            total_amount,
-            status,
-            fulfillment_type,
-            payment_method
-        )
-        VALUES (?, ?, ?, ?, 'Pending', ?, ?)
-    ");
+   $stmt = $conn->prepare("
+    INSERT INTO orders
+    (
+        user_id,
+        customer_name,
+        customer_phone,
+        customer_address,
+        total_amount,
+        status,
+        fulfillment_type,
+        payment_method
+    )
+    VALUES (?, ?, ?, ?, ?, 'Pending', ?, ?)
+");
 
     if (!$stmt) {
         die("Failed to prepare order: " . $conn->error);
     }
 
-
-    $stmt->bind_param(
-        "sssdss",
-        $customer_name,
-        $customer_phone,
-        $customer_address,
-        $final_total,
-        $fulfillment_type,
-        $payment_method
-    );
-
+$stmt->bind_param(
+    "isssdss",
+    $user_id,
+    $customer_name,
+    $customer_phone,
+    $customer_address,
+    $final_total,
+    $fulfillment_type,
+    $payment_method
+);
 
     if (!$stmt->execute()) {
         die("Failed to create order: " . $stmt->error);
@@ -782,7 +784,7 @@ include "includes/header.php";
             <div class="form-group">
 
                 <label>
-                    Name
+                    Name *
                 </label>
 
                 <input
@@ -804,7 +806,7 @@ include "includes/header.php";
             <div class="form-group">
 
                 <label>
-                    Phone Number
+                    Phone Number *
                 </label>
 
                 <input
@@ -839,7 +841,7 @@ include "includes/header.php";
                 <div class="form-group">
 
                     <label>
-                        State / Region
+                        State / Region *
                     </label>
 
                     <select
@@ -888,7 +890,7 @@ include "includes/header.php";
                 <div class="form-group">
 
                     <label>
-                        Township
+                        Township *
                     </label>
 
                     <select
@@ -911,7 +913,7 @@ include "includes/header.php";
                 <div class="form-group">
 
                     <label>
-                        Home Address
+                        Home Address *
                     </label>
 
                     <textarea

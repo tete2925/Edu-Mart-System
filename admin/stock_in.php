@@ -6,17 +6,16 @@ require_permission("stock_in");
 
 $result = $conn->query("
     SELECT
-        inventory.id,
-        inventory.product_id,
-        inventory.quantity,
-        inventory.note,
-        inventory.created_at,
+        stock_in.id,
+        stock_in.product_id,
+        stock_in.quantity,
+        stock_in.note,
+        stock_in.created_at,
         products.name AS product_name
-    FROM inventory
+    FROM stock_in
     INNER JOIN products
-        ON inventory.product_id = products.id
-    WHERE inventory.type = 'IN'
-    ORDER BY inventory.id DESC
+        ON stock_in.product_id = products.id
+    ORDER BY stock_in.id DESC
 ");
 
 ?>
@@ -87,7 +86,7 @@ Stock In
 
 <th>Quantity</th>
 
-<th>Note</th>
+<th>Supplier Note</th>
 
 <th>Date</th>
 

@@ -2,7 +2,8 @@
 
 require_once "admin_auth.php";
 
-if ($user['role'] !== 'owner') {
+
+    if (($user['role'] ?? '') !== 'owner') {
 
     header("Location: index.php");
     exit();

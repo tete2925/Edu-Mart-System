@@ -8,6 +8,13 @@ require_once "admin_auth.php";
 
 ?>
 
+<style>
+.admin-logo-icon {
+    background: #d71920 !important;
+    color: #ffffff !important;
+}
+</style>
+
 <aside class="admin-sidebar">
 
     <!-- LOGO -->
@@ -15,12 +22,13 @@ require_once "admin_auth.php";
     <div class="admin-logo">
 
         <div class="admin-logo-icon">
-            <i class="fa-solid fa-pencil"></i>
+            
+            <i class="fa-solid fa-book"></i>
         </div>
 
         <div class="admin-logo-text">
-            Student
-            <strong>Stationery</strong>
+            Edu
+            <strong>Mart</strong>
         </div>
 
     </div>
@@ -37,7 +45,7 @@ require_once "admin_auth.php";
            class="nav-link <?= basename($_SERVER['PHP_SELF']) === 'index.php' ? 'active' : '' ?>">
 
             <i class="fa-solid fa-gauge-high"></i>
-
+            
             <span>
                 Dashboard
             </span>
